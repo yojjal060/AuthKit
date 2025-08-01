@@ -1,7 +1,10 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import generateToken from "../utils/generateToken.util.js";
 import Joi from "joi";
+import crypto from "crypto";
+import logger from "../utils/logger.util.js";
+import sendEmail from "../utils/sendEmail.util.js";
 
 // Joi schemas
 const registerSchema = Joi.object({
@@ -42,16 +45,39 @@ const registerUser = async (req, res) => {
     }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
     // create new user
     const newUser = new User({
       name,
       email,
       password: hashedPassword,
+      resetToken: verificationToken,
     });
     await newUser.save();
-    res.status(201).json({ message: "User registered successfully." });
+
+    // Send verification email
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Verify your email",
+        html: `<p>Please verify your email by clicking the link below:</p>
+               <a href="${
+                 process.env.CLIENT_URL || "http://localhost:3000"
+               }/verify-email?token=${verificationToken}">Verify Email</a>`,
+      });
+    } catch (emailError) {
+      logger.error("Email sending failed:", emailError);
+    }
+
+    res.status(201).json({
+      message:
+        "User registered successfully. Please check your email to verify your account.",
+    });
   } catch (error) {
-    console.error("Registration error: ", error);
+    logger.error("Registration error: ", error);
     res.status(500).json({ message: "Server error." });
   }
 };
@@ -79,12 +105,10 @@ const loginUser = async (req, res) => {
       email: user.email,
       role: user.role,
     };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN,
-    });
+    const token = generateToken(payload);
     res.status(200).json({ token });
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error:", error);
     res.status(500).json({ message: "Server error." });
   }
 };
@@ -101,9 +125,115 @@ const updateProfile = async (req, res) => {
     );
     res.json({ message: "Profile updated", user: updatedUser });
   } catch (error) {
-    console.error("Profile update error:", error);
+    logger.error("Profile update error:", error);
     res.status(500).json({ message: "Server error." });
   }
 };
 
-export default { registerUser, loginUser, updateProfile };
+// Email verification controller
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res
+        .status(400)
+        .json({ message: "Verification token is required" });
+    }
+
+    const user = await User.findOne({ resetToken: token });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    user.isVerified = true;
+    user.resetToken = null;
+    await user.save();
+
+    res.json({ message: "Email verified successfully!" });
+  } catch (error) {
+    logger.error("Email verification error:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
+// Forgot password controller
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "No user found with this email" });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetToken = resetToken;
+    await user.save();
+
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Reset your password",
+        html: `<p>You requested a password reset. Click the link below to reset your password:</p>
+               <a href="${
+                 process.env.CLIENT_URL || "http://localhost:3000"
+               }/reset-password?token=${resetToken}">Reset Password</a>
+               <p>If you didn't request this, please ignore this email.</p>`,
+      });
+    } catch (emailError) {
+      logger.error("Password reset email failed:", emailError);
+      return res.status(500).json({ message: "Could not send reset email" });
+    }
+
+    res.json({ message: "Password reset email sent" });
+  } catch (error) {
+    logger.error("Forgot password error:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
+// Reset password controller
+const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res
+        .status(400)
+        .json({ message: "Token and password are required" });
+    }
+
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
+    }
+
+    const user = await User.findOne({ resetToken: token });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+    user.resetToken = null;
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+  } catch (error) {
+    logger.error("Reset password error:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
+export default {
+  registerUser,
+  loginUser,
+  updateProfile,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+};
