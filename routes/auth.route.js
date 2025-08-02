@@ -43,8 +43,8 @@ router.get("/reset-form", (req, res) => {
     `);
   }
 
-  // Build HTML string without complex template literals
-  const formHTML = `
+  // ✅ Fixed version with proper token handling
+  res.send(`
     <!DOCTYPE html>
     <html>
     <head>
@@ -203,15 +203,28 @@ router.get("/reset-form", (req, res) => {
       </div>
 
       <script>
-        // Store token as a global variable
-        window.RESET_TOKEN = '${token}';
+        // ✅ Extract token from current URL instead of template literal
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetToken = urlParams.get('token');
         
-        console.log('Token stored:', window.RESET_TOKEN);
-        console.log('Token length:', window.RESET_TOKEN.length);
+        console.log('Current URL:', window.location.href);
+        console.log('Token from URL:', resetToken);
+        console.log('Token length:', resetToken ? resetToken.length : 'No token');
+        
+        // Verify we have a token
+        if (!resetToken) {
+          document.getElementById('message').innerHTML = '<div class="message error">❌ No token found in URL. Please use the link from your email.</div>';
+          document.getElementById('resetForm').style.display = 'none';
+        }
         
         document.getElementById('resetForm').addEventListener('submit', async function(e) {
           e.preventDefault();
           console.log('Form submitted');
+          
+          if (!resetToken) {
+            console.error('No token available for submission');
+            return;
+          }
           
           const password = document.getElementById('password').value;
           const confirmPassword = document.getElementById('confirmPassword').value;
@@ -220,7 +233,7 @@ router.get("/reset-form", (req, res) => {
           const loading = document.getElementById('loading');
           const form = document.getElementById('resetForm');
           
-          console.log('Using token:', window.RESET_TOKEN);
+          console.log('Using token for API call:', resetToken);
           
           // Clear previous messages
           messageDiv.innerHTML = '';
@@ -242,7 +255,7 @@ router.get("/reset-form", (req, res) => {
           loading.style.display = 'block';
           
           try {
-            console.log('Making API request with token:', window.RESET_TOKEN);
+            console.log('Making API request with token:', resetToken);
             
             const response = await fetch('/api/auth/reset-password', {
               method: 'POST',
@@ -251,7 +264,7 @@ router.get("/reset-form", (req, res) => {
                 'Accept': 'application/json'
               },
               body: JSON.stringify({
-                token: window.RESET_TOKEN,
+                token: resetToken,
                 password: password
               })
             });
@@ -281,9 +294,7 @@ router.get("/reset-form", (req, res) => {
       </script>
     </body>
     </html>
-  `;
-
-  res.send(formHTML);
+  `);
 });
 
 router.get("/me", authMiddleware, (req, res) => {
