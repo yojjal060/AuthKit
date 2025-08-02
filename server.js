@@ -10,6 +10,9 @@ dotenv.config();
 
 const app = express();
 
+// Add trust proxy for Render
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
@@ -24,7 +27,7 @@ app.use(limiter);
 // Stricter rate limiting for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // limit each IP to 5 auth requests per windowMs
+  max: 50, // Increased for testing
   message: "Too many authentication attempts, please try again later.",
 });
 
