@@ -176,19 +176,62 @@ const forgotPassword = async (req, res) => {
     try {
       await sendEmail({
         to: email,
-        subject: "Reset your password",
-        html: `<p>You requested a password reset. Click the link below to reset your password:</p>
-               <a href="${
-                 process.env.CLIENT_URL || "http://localhost:3000"
-               }/reset-password?token=${resetToken}">Reset Password</a>
-               <p>If you didn't request this, please ignore this email.</p>`,
+        subject: "Reset your password - AuthKit",
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+              .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+              .footer { color: #666; font-size: 14px; margin-top: 30px; text-align: center; }
+              .token-box { background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🔐 Password Reset Request</h1>
+              </div>
+              <div class="content">
+                <p>Hello!</p>
+                <p>You requested a password reset for your AuthKit account.</p>
+                
+                <p><strong>Click the button below to reset your password:</strong></p>
+                <div style="text-align: center;">
+                  <a href="https://authkit-api.onrender.com/api/auth/reset-form?token=${resetToken}" class="button">
+                    Reset My Password
+                  </a>
+                </div>
+                
+                <p>Or copy and paste this link in your browser:</p>
+                <div class="token-box">
+                  <code>https://authkit-api.onrender.com/api/auth/reset-form?token=${resetToken}</code>
+                </div>
+                
+                <div class="footer">
+                  <p>⏰ This link will expire in 24 hours.</p>
+                  <p>If you didn't request this password reset, please ignore this email.</p>
+                  <p>Powered by AuthKit API</p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
       });
     } catch (emailError) {
       logger.error("Password reset email failed:", emailError);
       return res.status(500).json({ message: "Could not send reset email" });
     }
 
-    res.json({ message: "Password reset email sent" });
+    res.json({ 
+      message: "Password reset email sent successfully! Check your email for the reset link.",
+      note: "The reset link will expire in 24 hours"
+    });
   } catch (error) {
     logger.error("Forgot password error:", error);
     res.status(500).json({ message: "Server error." });
