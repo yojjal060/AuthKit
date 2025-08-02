@@ -36,14 +36,15 @@ router.get("/reset-form", (req, res) => {
           <div class="container">
             <h2>❌ Invalid Reset Link</h2>
             <p>No token provided. Please check your email for the correct reset link.</p>
+            <p>Debug: Token = "${token || 'undefined'}"</p>
           </div>
         </body>
       </html>
     `);
   }
 
-  // ✅ Build the HTML without template literals in JavaScript
-  const htmlContent = `
+  // Build HTML string without complex template literals
+  const formHTML = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -156,13 +157,28 @@ router.get("/reset-form", (req, res) => {
           color: #666;
           font-size: 14px;
         }
+        .debug {
+          background: #f8f9fa;
+          padding: 10px;
+          border-radius: 5px;
+          font-family: monospace;
+          font-size: 12px;
+          margin: 10px 0;
+          word-break: break-all;
+        }
       </style>
     </head>
     <body>
       <div class="container">
         <h2>🔐 Reset Your Password</h2>
+        
+        <div class="debug">
+          <strong>Debug Info:</strong><br>
+          Token: ${token}<br>
+          Length: ${token.length}
+        </div>
+        
         <form id="resetForm">
-          <input type="hidden" id="resetToken" value="${token}">
           <div class="form-group">
             <label>New Password:</label>
             <input type="password" id="password" required minlength="6" placeholder="Enter new password (min 6 chars)">
@@ -187,18 +203,24 @@ router.get("/reset-form", (req, res) => {
       </div>
 
       <script>
-        document.getElementById('resetForm').addEventListener('submit', async (e) => {
+        // Store token as a global variable
+        window.RESET_TOKEN = '${token}';
+        
+        console.log('Token stored:', window.RESET_TOKEN);
+        console.log('Token length:', window.RESET_TOKEN.length);
+        
+        document.getElementById('resetForm').addEventListener('submit', async function(e) {
           e.preventDefault();
+          console.log('Form submitted');
           
           const password = document.getElementById('password').value;
           const confirmPassword = document.getElementById('confirmPassword').value;
-          const resetToken = document.getElementById('resetToken').value;
           const messageDiv = document.getElementById('message');
           const submitBtn = document.getElementById('submitBtn');
           const loading = document.getElementById('loading');
           const form = document.getElementById('resetForm');
           
-          console.log('Submitting with token:', resetToken);
+          console.log('Using token:', window.RESET_TOKEN);
           
           // Clear previous messages
           messageDiv.innerHTML = '';
@@ -220,28 +242,35 @@ router.get("/reset-form", (req, res) => {
           loading.style.display = 'block';
           
           try {
+            console.log('Making API request with token:', window.RESET_TOKEN);
+            
             const response = await fetch('/api/auth/reset-password', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
               body: JSON.stringify({
-                token: resetToken,
+                token: window.RESET_TOKEN,
                 password: password
               })
             });
             
+            console.log('Response status:', response.status);
             const data = await response.json();
+            console.log('Response data:', data);
             
             if (response.ok) {
               messageDiv.innerHTML = '<div class="message success">✅ Password reset successful! You can now login with your new password.</div>';
               form.style.display = 'none';
             } else {
-              messageDiv.innerHTML = '<div class="message error">❌ ' + data.message + '</div>';
+              messageDiv.innerHTML = '<div class="message error">❌ ' + (data.message || 'Unknown error') + '</div>';
               submitBtn.disabled = false;
               submitBtn.textContent = 'Reset Password';
             }
           } catch (error) {
             console.error('Reset error:', error);
-            messageDiv.innerHTML = '<div class="message error">❌ Network error. Please try again.</div>';
+            messageDiv.innerHTML = '<div class="message error">❌ Network error: ' + error.message + '</div>';
             submitBtn.disabled = false;
             submitBtn.textContent = 'Reset Password';
           }
@@ -254,7 +283,7 @@ router.get("/reset-form", (req, res) => {
     </html>
   `;
 
-  res.send(htmlContent);
+  res.send(formHTML);
 });
 
 router.get("/me", authMiddleware, (req, res) => {
