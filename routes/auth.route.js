@@ -183,6 +183,9 @@ router.get("/reset-form", (req, res) => {
       </div>
 
       <script>
+        // Store the token as a JavaScript variable
+        const resetToken = "${token}";
+        
         document.getElementById('resetForm').addEventListener('submit', async (e) => {
           e.preventDefault();
           
@@ -214,13 +217,13 @@ router.get("/reset-form", (req, res) => {
           
           try {
             const response = await fetch('/api/auth/reset-password', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    token: \`${token}\`,  // ✅ Use backticks for template literal
-    password: password
-  })
-});
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token: resetToken,  // ✅ Use the JavaScript variable directly
+                password: password
+              })
+            });
             
             const data = await response.json();
             
