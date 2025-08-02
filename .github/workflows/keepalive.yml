@@ -1,11 +1,9 @@
-
 name: Keep AuthKit API Alive
 
 on:
   schedule:
-    # Ping every 14 minutes to prevent Render from sleeping
     - cron: '*/14 * * * *'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
 
 jobs:
   ping:
