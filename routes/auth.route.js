@@ -14,11 +14,9 @@ router.get("/verify-email", authController.verifyEmail);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
 
-// NEW: Password reset form route
+// Password reset form route
 router.get("/reset-form", (req, res) => {
   const { token } = req.query;
-  
-  console.log("Reset form accessed with token:", token); // Debug log
   
   if (!token) {
     return res.status(400).send(`
@@ -36,14 +34,13 @@ router.get("/reset-form", (req, res) => {
           <div class="container">
             <h2>❌ Invalid Reset Link</h2>
             <p>No token provided. Please check your email for the correct reset link.</p>
-            <p>Debug: Token = "${token || 'undefined'}"</p>
           </div>
         </body>
       </html>
     `);
   }
 
-  // ✅ Build the HTML with the token embedded as a data attribute
+  // Clean HTML with improved button design
   const htmlResponse = `
     <!DOCTYPE html>
     <html>
@@ -98,7 +95,7 @@ router.get("/reset-form", (req, res) => {
           border-color: #667eea;
         }
         button { 
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: #007bff;
           color: white;
           padding: 15px 20px;
           border: none;
@@ -107,15 +104,14 @@ router.get("/reset-form", (req, res) => {
           width: 100%;
           font-size: 16px;
           font-weight: 600;
-          transition: transform 0.2s;
+          transition: background-color 0.3s;
         }
         button:hover { 
-          transform: translateY(-2px);
+          background: #0056b3;
         }
         button:disabled {
-          opacity: 0.6;
+          background: #6c757d;
           cursor: not-allowed;
-          transform: none;
         }
         .message { 
           padding: 15px;
@@ -140,7 +136,7 @@ router.get("/reset-form", (req, res) => {
         }
         .spinner {
           border: 3px solid #f3f3f3;
-          border-top: 3px solid #667eea;
+          border-top: 3px solid #007bff;
           border-radius: 50%;
           width: 30px;
           height: 30px;
@@ -157,26 +153,11 @@ router.get("/reset-form", (req, res) => {
           color: #666;
           font-size: 14px;
         }
-        .debug {
-          background: #f8f9fa;
-          padding: 10px;
-          border-radius: 5px;
-          font-family: monospace;
-          font-size: 12px;
-          margin: 10px 0;
-          word-break: break-all;
-        }
       </style>
     </head>
     <body>
       <div class="container" data-token="${token}">
         <h2>🔐 Reset Your Password</h2>
-        
-        <div class="debug">
-          <strong>Debug Info:</strong><br>
-          Token: ${token}<br>
-          Length: ${token.length}
-        </div>
         
         <form id="resetForm">
           <div class="form-group">
@@ -203,15 +184,9 @@ router.get("/reset-form", (req, res) => {
       </div>
 
       <script>
-        // ✅ Get the token from the data attribute instead of URL parsing
         const container = document.querySelector('.container');
         const resetToken = container.getAttribute('data-token');
         
-        console.log('Token from data attribute:', resetToken);
-        console.log('Token length:', resetToken ? resetToken.length : 'No token');
-        console.log('Current URL:', window.location.href);
-        
-        // Verify we have a token
         if (!resetToken || resetToken === 'undefined' || resetToken === 'null') {
           document.getElementById('message').innerHTML = '<div class="message error">❌ No valid token found. Please use the link from your email.</div>';
           document.getElementById('resetForm').style.display = 'none';
@@ -219,10 +194,8 @@ router.get("/reset-form", (req, res) => {
         
         document.getElementById('resetForm').addEventListener('submit', async function(e) {
           e.preventDefault();
-          console.log('Form submitted with token:', resetToken);
           
           if (!resetToken || resetToken === 'undefined' || resetToken === 'null') {
-            console.error('No valid token available for submission');
             document.getElementById('message').innerHTML = '<div class="message error">❌ Invalid token. Please use the link from your email.</div>';
             return;
           }
@@ -234,10 +207,8 @@ router.get("/reset-form", (req, res) => {
           const loading = document.getElementById('loading');
           const form = document.getElementById('resetForm');
           
-          // Clear previous messages
           messageDiv.innerHTML = '';
           
-          // Validation
           if (password !== confirmPassword) {
             messageDiv.innerHTML = '<div class="message error">❌ Passwords do not match!</div>';
             return;
@@ -248,15 +219,11 @@ router.get("/reset-form", (req, res) => {
             return;
           }
           
-          // Show loading
           submitBtn.disabled = true;
           submitBtn.textContent = 'Resetting...';
           loading.style.display = 'block';
           
           try {
-            console.log('Making API request with token:', resetToken);
-            console.log('Request payload:', { token: resetToken, password: '***' });
-            
             const response = await fetch('/api/auth/reset-password', {
               method: 'POST',
               headers: { 
@@ -269,17 +236,7 @@ router.get("/reset-form", (req, res) => {
               })
             });
             
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
-            
-            let data;
-            try {
-              data = await response.json();
-              console.log('Response data:', data);
-            } catch (parseError) {
-              console.error('Failed to parse response as JSON:', parseError);
-              throw new Error('Invalid response format');
-            }
+            const data = await response.json();
             
             if (response.ok) {
               messageDiv.innerHTML = '<div class="message success">✅ Password reset successful! You can now login with your new password.</div>';
@@ -290,13 +247,11 @@ router.get("/reset-form", (req, res) => {
               submitBtn.textContent = 'Reset Password';
             }
           } catch (error) {
-            console.error('Reset error:', error);
-            messageDiv.innerHTML = '<div class="message error">❌ Network error: ' + error.message + '</div>';
+            messageDiv.innerHTML = '<div class="message error">❌ Network error. Please try again.</div>';
             submitBtn.disabled = false;
             submitBtn.textContent = 'Reset Password';
           }
           
-          // Hide loading
           loading.style.display = 'none';
         });
       </script>
@@ -314,25 +269,18 @@ router.get("/me", authMiddleware, (req, res) => {
   });
 });
 
-// Update profile route
 router.put("/me", authMiddleware, authController.updateProfile);
 
-// @route   POST /api/auth/logout
-// @desc    Logout user (JWT is stateless, so just instruct client to delete token)
-// @access  Public
 router.post("/logout", (req, res) => {
-  // Instruct client to remove token
   res.json({
     message: "Logout successful. Please remove your token on client side.",
   });
 });
 
-// Health check route
 router.get("/health", (req, res) => {
   res.json({ status: "ok", message: "AuthKit API is healthy." });
 });
 
-// Admin only route example
 router.get("/admin", authMiddleware, requireRole("admin"), (req, res) => {
   res.json({
     message: "Welcome to admin panel",
