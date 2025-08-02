@@ -13,8 +13,26 @@ const app = express();
 // Add trust proxy for Render
 app.set('trust proxy', 1);
 
-// Security middleware
-app.use(helmet());
+// Modified Helmet configuration to allow inline scripts for reset form
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'", 
+        "'unsafe-inline'", // Allow inline scripts
+        "'unsafe-eval'"    // Allow eval (for fetch API)
+      ],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"], //  Allow API calls to same origin
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+}));
 
 // Rate limiting
 const limiter = rateLimit({
