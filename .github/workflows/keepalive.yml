@@ -1,0 +1,23 @@
+name: Keep AuthKit API Alive
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping AuthKit API Health Check
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://authkit-api.onrender.com/api/auth/health)
+          if [ $response -eq 200 ]; then
+            echo "✅ AuthKit API is alive and healthy at $(date)"
+          else
+            echo "❌ AuthKit API returned status code: $response at $(date)"
+            exit 1
+          fi
+      
+      - name: Log Success
+        run: echo "🚀 Keep-alive ping completed successfully"
