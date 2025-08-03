@@ -1,8 +1,8 @@
 name: Keep AuthKit API Alive
 
 on:
-  schedule:
-    - cron: '*/14 * * * *'
+  # schedule:
+  #   - cron: '*/14 * * * *'
   workflow_dispatch:
 
 jobs:
