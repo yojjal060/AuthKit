@@ -132,6 +132,33 @@ body {
   color: #64748b;
 }
 
+.footer a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Mobile responsive for footer buttons */
+@media (max-width: 768px) {
+  .footer a {
+    display: block !important;
+    margin: 10px 0 !important;
+    text-align: center;
+  }
+}
+
+/* Hover effects for different button types */
+.footer a[href*="github.com"]:hover {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%) !important;
+}
+
+.footer a[href*="issues"]:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+}
+
+.footer a[href*="fork"]:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+}
+
 .status-online { 
   color: #10b981;
   font-weight: 600;
