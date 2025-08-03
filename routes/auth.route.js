@@ -97,7 +97,7 @@ router.post("/resend-verification", async (req, res) => {
 
     // Generate new verification token
     const verificationToken = crypto.randomBytes(32).toString("hex");
-    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const tokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     
     user.verificationToken = verificationToken;
     user.tokenExpires = tokenExpires;
@@ -147,7 +147,7 @@ router.post("/resend-verification", async (req, res) => {
               </p>
               
               <div class="footer">
-                <p>⏰ This link will expire in 24 hours.</p>
+                <p>⏰ This link will expire in 15 minutes.</p>
                 <p>Application: ${tenantId}</p>
               </div>
             </div>

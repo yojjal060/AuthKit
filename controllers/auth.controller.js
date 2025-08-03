@@ -232,7 +232,7 @@ const registerUser = async (req, res) => {
 
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString("hex");
-    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const tokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Create new user with tenant support
     const newUser = new User({
@@ -556,7 +556,7 @@ const forgotPassword = async (req, res) => {
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
-    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const tokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     
     user.resetToken = resetToken;
     user.tokenExpires = tokenExpires;
@@ -581,7 +581,7 @@ const forgotPassword = async (req, res) => {
         </div>
         
         <p class="warning-text">
-          ⏰ <strong>Important:</strong> This password reset link will expire in 24 hours for security reasons.<br>
+          ⏰ <strong>Important:</strong> This password reset link will expire in 15 minutes for security reasons.<br>
           🛡️ If you didn't request this password reset, please ignore this email. Your account remains secure.
         </p>
         
@@ -607,7 +607,7 @@ const forgotPassword = async (req, res) => {
 
     res.json({ 
       message: "Password reset email sent successfully! Check your email for the reset link.",
-      note: "The reset link will expire in 24 hours"
+      note: "The reset link will expire in 15 minutes"
     });
   } catch (error) {
     logger.error("Forgot password error:", error);
