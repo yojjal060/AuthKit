@@ -17,6 +17,13 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: [true, 'Password is required'],
         },
+        // tenant support
+        tenantId: {
+            type: String,
+            required: false, // Optional for backward compatibility
+            default: 'default',
+            index: true
+        },
         role: {
             type: String,
             enum: ['user', 'admin'],
@@ -26,8 +33,18 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        // Separate tokens for different purposes
+        verificationToken: {
+            type: String,
+            default: null,
+        },
         resetToken: {
             type: String,
+            default: null,
+        },
+        // Add token expiration
+        tokenExpires: {
+            type: Date,
             default: null,
         },
         provider: {
@@ -42,5 +59,8 @@ const userSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+// Compound index for tenant + email uniqueness
+userSchema.index({ tenantId: 1, email: 1 }, { unique: true });
 
 export default mongoose.model('User', userSchema);

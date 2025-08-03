@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AuthKit API - Complete Authentication Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔐 AuthKit API</h1>
+      <p>Complete Authentication Service for Your Projects</p>
+      <p><strong>Base URL:</strong> <span id="baseUrl"></span></p>
+    </div>
+
+    <div class="features">
+      <div class="feature">
+        <h3>🚀 Ready to Use</h3>
+        <p>JWT authentication, password hashing, email verification, password reset - everything you need for modern applications!</p>
+      </div>
+      <div class="feature">
+        <h3>🛡️ Enterprise Security</h3>
+        <p>BCrypt hashing, rate limiting, input validation, CORS protection, and comprehensive security headers included.</p>
+      </div>
+      <div class="feature">
+        <h3>📧 Email Integration</h3>
+        <p>Beautiful responsive email templates for verification and password reset with configurable SMTP support.</p>
+      </div>
+      <div class="feature">
+        <h3>🔧 Developer Friendly</h3>
+        <p>Clean REST API, comprehensive documentation, role-based access control, and extensive testing coverage.</p>
+      </div>
+    </div>
+
+    <div class="endpoints">
+      <h2>📡 API Endpoints</h2>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span> /api/auth/register
+        <br><small>Register new user with automatic email verification</small>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span> /api/auth/login  
+        <br><small>Authenticate user and receive JWT access token</small>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> /api/auth/verify-email?token=...
+        <br><small>Verify user email address with secure token</small>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span> /api/auth/forgot-password
+        <br><small>Request secure password reset via email</small>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> /api/auth/me
+        <br><small>Get authenticated user information (Protected)</small>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method put">PUT</span> /api/auth/me
+        <br><small>Update user profile and settings (Protected)</small>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> /api/auth/health
+        <br><small>API health check and status monitoring</small>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Built with Node.js, Express, MongoDB & JWT Authentication</p>
+      <p>Status: <strong class="status-online">✅ Online & Healthy</strong> | <span id="lastUpdated"></span></p>
+      <p style="margin-top: 20px; font-size: 14px;">© 2025 AuthKit API - Production Ready Authentication Service</p>
+    </div>
+  </div>
+
+  <script>
+    // Set dynamic values
+    document.getElementById('baseUrl').textContent = window.location.origin;
+    document.getElementById('lastUpdated').textContent = 'Last Updated: ' + new Date().toLocaleString();
+  </script>
+</body>
+</html>

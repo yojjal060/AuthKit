@@ -2,266 +2,52 @@ import express from "express";
 import authController from "../controllers/auth.controller.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
 import requireRole from "../middlewares/role.middleware.js";
+import tenantMiddleware from "../middlewares/tenant.middleware.js";
 import sendEmail from "../utils/sendEmail.util.js";
+import crypto from 'crypto';
+import User from '../models/user.model.js';
 
 const router = express.Router();
 
-router.post("/register", authController.registerUser);
-router.post("/login", authController.loginUser);
-
-// Email verification and password reset routes
+// Routes that don't need tenant middleware
 router.get("/verify-email", authController.verifyEmail);
-router.post("/forgot-password", authController.forgotPassword);
-router.post("/reset-password", authController.resetPassword);
 
-// Password reset form route
 router.get("/reset-form", (req, res) => {
   const { token } = req.query;
   
   if (!token) {
     return res.status(400).send(`
       <html>
-        <head>
-          <title>Invalid Reset Link - AuthKit</title>
-          <style>
-            body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; background: #f9f9f9; }
-            .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            h2 { color: #dc3545; text-align: center; }
-            p { color: #666; text-align: center; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h2>❌ Invalid Reset Link</h2>
-            <p>No token provided. Please check your email for the correct reset link.</p>
-          </div>
+        <head><title>Invalid Reset Link</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+          <h2>❌ Invalid Reset Link</h2>
+          <p>No token provided. Please check your email for the correct reset link.</p>
         </body>
       </html>
     `);
   }
 
-  // Clean HTML with improved button design
-  const htmlResponse = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Reset Password - AuthKit</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <style>
-        * { box-sizing: border-box; }
-        body { 
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          margin: 0;
-          padding: 20px;
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .container {
-          background: white;
-          max-width: 400px;
-          width: 100%;
-          padding: 40px;
-          border-radius: 15px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        h2 { 
-          color: #333;
-          text-align: center;
-          margin-bottom: 30px;
-          font-size: 24px;
-        }
-        .form-group { 
-          margin-bottom: 20px;
-        }
-        label { 
-          display: block;
-          margin-bottom: 8px;
-          font-weight: 600;
-          color: #555;
-        }
-        input { 
-          width: 100%;
-          padding: 12px 15px;
-          border: 2px solid #e1e5e9;
-          border-radius: 8px;
-          font-size: 16px;
-          transition: border-color 0.3s;
-        }
-        input:focus {
-          outline: none;
-          border-color: #667eea;
-        }
-        button { 
-          background: #007bff;
-          color: white;
-          padding: 15px 20px;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          width: 100%;
-          font-size: 16px;
-          font-weight: 600;
-          transition: background-color 0.3s;
-        }
-        button:hover { 
-          background: #0056b3;
-        }
-        button:disabled {
-          background: #6c757d;
-          cursor: not-allowed;
-        }
-        .message { 
-          padding: 15px;
-          margin: 15px 0;
-          border-radius: 8px;
-          font-weight: 500;
-        }
-        .success { 
-          background: #d4edda;
-          color: #155724;
-          border: 1px solid #c3e6cb;
-        }
-        .error { 
-          background: #f8d7da;
-          color: #721c24;
-          border: 1px solid #f5c6cb;
-        }
-        .loading {
-          display: none;
-          text-align: center;
-          margin: 10px 0;
-        }
-        .spinner {
-          border: 3px solid #f3f3f3;
-          border-top: 3px solid #007bff;
-          border-radius: 50%;
-          width: 30px;
-          height: 30px;
-          animation: spin 1s linear infinite;
-          margin: 0 auto;
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .footer {
-          text-align: center;
-          margin-top: 30px;
-          color: #666;
-          font-size: 14px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container" data-token="${token}">
-        <h2>🔐 Reset Your Password</h2>
-        
-        <form id="resetForm">
-          <div class="form-group">
-            <label>New Password:</label>
-            <input type="password" id="password" required minlength="6" placeholder="Enter new password (min 6 chars)">
-          </div>
-          <div class="form-group">
-            <label>Confirm Password:</label>
-            <input type="password" id="confirmPassword" required minlength="6" placeholder="Confirm new password">
-          </div>
-          <button type="submit" id="submitBtn">Reset Password</button>
-        </form>
-        
-        <div class="loading" id="loading">
-          <div class="spinner"></div>
-          <p>Resetting your password...</p>
-        </div>
-        
-        <div id="message"></div>
-        
-        <div class="footer">
-          <p>Powered by AuthKit API</p>
-        </div>
-      </div>
-
-      <script>
-        const container = document.querySelector('.container');
-        const resetToken = container.getAttribute('data-token');
-        
-        if (!resetToken || resetToken === 'undefined' || resetToken === 'null') {
-          document.getElementById('message').innerHTML = '<div class="message error">❌ No valid token found. Please use the link from your email.</div>';
-          document.getElementById('resetForm').style.display = 'none';
-        }
-        
-        document.getElementById('resetForm').addEventListener('submit', async function(e) {
-          e.preventDefault();
-          
-          if (!resetToken || resetToken === 'undefined' || resetToken === 'null') {
-            document.getElementById('message').innerHTML = '<div class="message error">❌ Invalid token. Please use the link from your email.</div>';
-            return;
-          }
-          
-          const password = document.getElementById('password').value;
-          const confirmPassword = document.getElementById('confirmPassword').value;
-          const messageDiv = document.getElementById('message');
-          const submitBtn = document.getElementById('submitBtn');
-          const loading = document.getElementById('loading');
-          const form = document.getElementById('resetForm');
-          
-          messageDiv.innerHTML = '';
-          
-          if (password !== confirmPassword) {
-            messageDiv.innerHTML = '<div class="message error">❌ Passwords do not match!</div>';
-            return;
-          }
-          
-          if (password.length < 6) {
-            messageDiv.innerHTML = '<div class="message error">❌ Password must be at least 6 characters!</div>';
-            return;
-          }
-          
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Resetting...';
-          loading.style.display = 'block';
-          
-          try {
-            const response = await fetch('/api/auth/reset-password', {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({
-                token: resetToken,
-                password: password
-              })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok) {
-              messageDiv.innerHTML = '<div class="message success">✅ Password reset successful! You can now login with your new password.</div>';
-              form.style.display = 'none';
-            } else {
-              messageDiv.innerHTML = '<div class="message error">❌ ' + (data.message || 'Password reset failed') + '</div>';
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Reset Password';
-            }
-          } catch (error) {
-            messageDiv.innerHTML = '<div class="message error">❌ Network error. Please try again.</div>';
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Reset Password';
-          }
-          
-          loading.style.display = 'none';
-        });
-      </script>
-    </body>
-    </html>
-  `;
-
-  res.send(htmlResponse);
+  // Redirect to static HTML page with token
+  res.redirect(`/reset-password.html?token=${token}`);
 });
 
+// Apply tenant middleware to all other routes
+router.use(tenantMiddleware);
+
+// Authentication routes
+router.post("/register", authController.registerUser);
+router.post("/login", authController.loginUser);
+router.post("/logout", (req, res) => {
+  res.json({
+    message: "Logout successful. Please remove your token on client side.",
+  });
+});
+
+// Password reset routes
+router.post("/forgot-password", authController.forgotPassword);
+router.post("/reset-password", authController.resetPassword);
+
+// Protected routes
 router.get("/me", authMiddleware, (req, res) => {
   res.json({
     message: "You are authorized",
@@ -271,16 +57,7 @@ router.get("/me", authMiddleware, (req, res) => {
 
 router.put("/me", authMiddleware, authController.updateProfile);
 
-router.post("/logout", (req, res) => {
-  res.json({
-    message: "Logout successful. Please remove your token on client side.",
-  });
-});
-
-router.get("/health", (req, res) => {
-  res.json({ status: "ok", message: "AuthKit API is healthy." });
-});
-
+// Admin routes
 router.get("/admin", authMiddleware, requireRole("admin"), (req, res) => {
   res.json({
     message: "Welcome to admin panel",
@@ -288,18 +65,120 @@ router.get("/admin", authMiddleware, requireRole("admin"), (req, res) => {
   });
 });
 
-router.post("/test-email", async (req, res) => {
+// Utility routes
+router.get("/health", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    message: "AuthKit API is healthy.",
+    timestamp: new Date().toISOString(),
+    tenant: req.tenantId || 'default'
+  });
+});
+
+// Resend verification email
+router.post("/resend-verification", async (req, res) => {
   try {
-    await sendEmail({
-      to: req.body.to,
-      subject: "Live Email",
-      text: "This is a live email from AuthKit.",
-      html: "<b>This is a live email from AuthKit.</b>",
+    const { email } = req.body;
+    const tenantId = req.tenantId || 'default';
+    
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ 
+      email: email.toLowerCase().trim(), 
+      tenantId, 
+      isVerified: false 
     });
-    res.json({ message: "Email sent!" });
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found or already verified" });
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    user.verificationToken = verificationToken;
+    user.tokenExpires = tokenExpires;
+    await user.save();
+
+    // Generate verification URL
+    const isLocalhost = req.get('host').includes('localhost');
+    const baseUrl = isLocalhost 
+      ? `${req.protocol}://${req.get('host')}` 
+      : process.env.CLIENT_URL;
+    const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${verificationToken}`;
+    
+    await sendEmail({
+      to: email,
+      subject: "Verify your email - AuthKit",
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0; }
+            .button { display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+            .footer { color: #64748b; font-size: 14px; margin-top: 30px; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📧 Verify Your Email</h1>
+            </div>
+            <div class="content">
+              <p>Hello <strong>${user.name}</strong>!</p>
+              <p>Please verify your email address by clicking the button below:</p>
+              
+              <div style="text-align: center;">
+                <a href="${verificationUrl}" class="button">
+                  Verify My Email
+                </a>
+              </div>
+              
+              <p>Or copy and paste this link in your browser:</p>
+              <p style="background: white; padding: 15px; border-radius: 8px; word-break: break-all; font-family: monospace;">
+                ${verificationUrl}
+              </p>
+              
+              <div class="footer">
+                <p>⏰ This link will expire in 24 hours.</p>
+                <p>Application: ${tenantId}</p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    res.json({ message: "Verification email sent successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Email failed", error: error.message });
+    console.error("Resend verification error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
+
+// Test email functionality (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  router.post("/test-email", async (req, res) => {
+    try {
+      await sendEmail({
+        to: req.body.to,
+        subject: "Test Email from AuthKit",
+        text: "This is a test email from AuthKit.",
+        html: "<b>This is a test email from AuthKit.</b>",
+      });
+      res.json({ message: "Email sent!" });
+    } catch (error) {
+      res.status(500).json({ message: "Email failed", error: error.message });
+    }
+  });
+}
 
 export default router;
