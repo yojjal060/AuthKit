@@ -309,3 +309,42 @@ body {
   font-size: 14px;
   font-weight: 500;
 }
+
+pre {
+  background: #f1f5f9;
+  padding: 20px;
+  border-radius: 12px;
+  overflow-x: auto;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+code {
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  font-size: 14px;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.news-card pre {
+  margin: 10px 0;
+}
+
+/* Better mobile responsiveness for code */
+@media (max-width: 768px) {
+  pre {
+    padding: 15px;
+    font-size: 12px;
+  }
+  
+  code {
+    font-size: 12px;
+    padding: 2px 6px;
+  }
+}

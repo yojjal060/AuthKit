@@ -9,7 +9,7 @@
   <div class="container">
     <div class="header">
       <h1>🔐 AuthKit API</h1>
-      <p>Complete Authentication Service for Your Projects</p>
+      <p>Complete Multi-Tenant Authentication Service for Your Projects</p>
       <p><strong>Base URL:</strong> <span id="baseUrl"></span></p>
     </div>
 
@@ -17,6 +17,10 @@
       <div class="feature">
         <h3>🚀 Ready to Use</h3>
         <p>JWT authentication, password hashing, email verification, password reset - everything you need for modern applications!</p>
+      </div>
+      <div class="feature">
+        <h3>🏢 Multi-Tenant Support</h3>
+        <p>Isolate users by application with tenant support. Same email can exist in different apps without conflicts.</p>
       </div>
       <div class="feature">
         <h3>🛡️ Enterprise Security</h3>
@@ -30,51 +34,197 @@
         <h3>🔧 Developer Friendly</h3>
         <p>Clean REST API, comprehensive documentation, role-based access control, and extensive testing coverage.</p>
       </div>
+      <div class="feature">
+        <h3>📊 Production Ready</h3>
+        <p>Winston logging, health checks, error handling, and comprehensive monitoring built-in.</p>
+      </div>
     </div>
 
+    <!-- Multi-Tenant Usage Section -->
+    <div class="endpoints">
+      <h2>🏢 Multi-Tenant Usage</h2>
+      <p>AuthKit supports multiple applications with isolated user bases. Include the <code>X-Tenant-ID</code> header in your requests:</p>
+      
+      <div class="news-card">
+        <h3>🎯 Basic Usage</h3>
+        <div class="endpoint">
+          <strong>Headers Required:</strong><br>
+          <code>X-Tenant-ID: your-app-name</code><br>
+          <code>Content-Type: application/json</code>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <h3>📱 Example: Chat App Registration</h3>
+        <pre style="background: #f1f5f9; padding: 20px; border-radius: 10px; overflow-x: auto;">
+fetch('/api/auth/register', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Tenant-ID': 'johns-chat-app'
+  },
+  body: JSON.stringify({
+    name: 'Alice Johnson',
+    email: 'alice@example.com',
+    password: 'securepass123'
+  })
+})</pre>
+      </div>
+
+      <div class="news-card">
+        <h3>🛒 Example: E-commerce App (Same Email, Different App)</h3>
+        <pre style="background: #f1f5f9; padding: 20px; border-radius: 10px; overflow-x: auto;">
+fetch('/api/auth/register', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Tenant-ID': 'marys-shop'
+  },
+  body: JSON.stringify({
+    name: 'Alice Johnson',
+    email: 'alice@example.com', // Same email, different app!
+    password: 'different_password'
+  })
+})</pre>
+      </div>
+    </div>
+
+    <!-- API Endpoints Section -->
     <div class="endpoints">
       <h2>📡 API Endpoints</h2>
       
       <div class="endpoint">
         <span class="method post">POST</span> /api/auth/register
         <br><small>Register new user with automatic email verification</small>
+        <br><small><strong>Headers:</strong> X-Tenant-ID, Content-Type</small>
+        <br><small><strong>Body:</strong> {name, email, password}</small>
       </div>
       
       <div class="endpoint">
         <span class="method post">POST</span> /api/auth/login  
         <br><small>Authenticate user and receive JWT access token</small>
+        <br><small><strong>Headers:</strong> X-Tenant-ID, Content-Type</small>
+        <br><small><strong>Body:</strong> {email, password}</small>
       </div>
       
       <div class="endpoint">
         <span class="method get">GET</span> /api/auth/verify-email?token=...
-        <br><small>Verify user email address with secure token</small>
+        <br><small>Verify user email address with secure token (No headers needed)</small>
       </div>
       
       <div class="endpoint">
         <span class="method post">POST</span> /api/auth/forgot-password
         <br><small>Request secure password reset via email</small>
+        <br><small><strong>Headers:</strong> X-Tenant-ID, Content-Type</small>
+        <br><small><strong>Body:</strong> {email}</small>
+      </div>
+
+      <div class="endpoint">
+        <span class="method post">POST</span> /api/auth/reset-password
+        <br><small>Reset password with token from email</small>
+        <br><small><strong>Headers:</strong> X-Tenant-ID, Content-Type</small>
+        <br><small><strong>Body:</strong> {token, password}</small>
       </div>
       
       <div class="endpoint">
         <span class="method get">GET</span> /api/auth/me
         <br><small>Get authenticated user information (Protected)</small>
+        <br><small><strong>Headers:</strong> Authorization: Bearer &lt;token&gt;, X-Tenant-ID</small>
       </div>
       
       <div class="endpoint">
         <span class="method put">PUT</span> /api/auth/me
         <br><small>Update user profile and settings (Protected)</small>
+        <br><small><strong>Headers:</strong> Authorization: Bearer &lt;token&gt;, X-Tenant-ID</small>
+        <br><small><strong>Body:</strong> {name, avatarURL}</small>
+      </div>
+
+      <div class="endpoint">
+        <span class="method post">POST</span> /api/auth/resend-verification
+        <br><small>Resend email verification</small>
+        <br><small><strong>Headers:</strong> X-Tenant-ID, Content-Type</small>
+        <br><small><strong>Body:</strong> {email}</small>
       </div>
       
       <div class="endpoint">
         <span class="method get">GET</span> /api/auth/health
         <br><small>API health check and status monitoring</small>
+        <br><small><strong>Headers:</strong> X-Tenant-ID (optional)</small>
+      </div>
+    </div>
+
+    <!-- Complete Examples Section -->
+    <div class="endpoints">
+      <h2>💻 Complete Integration Examples</h2>
+      
+      <div class="news-card">
+        <h3>🔐 Authentication Flow</h3>
+        <pre style="background: #f1f5f9; padding: 20px; border-radius: 10px; overflow-x: auto; font-size: 14px;">
+// 1. Register User
+const registerResponse = await fetch('/api/auth/register', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Tenant-ID': 'my-awesome-app'
+  },
+  body: JSON.stringify({
+    name: 'John Doe',
+    email: 'john@example.com',
+    password: 'securepass123'
+  })
+});
+
+// 2. User verifies email (via email link)
+// 3. Login User
+const loginResponse = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Tenant-ID': 'my-awesome-app'
+  },
+  body: JSON.stringify({
+    email: 'john@example.com',
+    password: 'securepass123'
+  })
+});
+
+const { token } = await loginResponse.json();
+
+// 4. Access Protected Routes
+const userResponse = await fetch('/api/auth/me', {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'X-Tenant-ID': 'my-awesome-app'
+  }
+});
+</pre>
+      </div>
+
+      <div class="news-card">
+        <h3>🔄 Password Reset Flow</h3>
+        <pre style="background: #f1f5f9; padding: 20px; border-radius: 10px; overflow-x: auto; font-size: 14px;">
+// 1. Request password reset
+await fetch('/api/auth/forgot-password', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Tenant-ID': 'my-awesome-app'
+  },
+  body: JSON.stringify({
+    email: 'john@example.com'
+  })
+});
+
+// 2. User clicks link in email
+// 3. User submits new password (handled by our reset form)
+</pre>
       </div>
     </div>
 
     <div class="footer">
       <p>Built with Node.js, Express, MongoDB & JWT Authentication</p>
       <p>Status: <strong class="status-online">✅ Online & Healthy</strong> | <span id="lastUpdated"></span></p>
-      <p style="margin-top: 20px; font-size: 14px;">© 2025 AuthKit API - Production Ready Authentication Service</p>
+      <p style="margin-top: 20px; font-size: 14px;">© 2025 AuthKit API - Production Ready Multi-Tenant Authentication Service</p>
     </div>
   </div>
 
