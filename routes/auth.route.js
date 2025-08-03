@@ -48,11 +48,69 @@ router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
 
 // Protected routes
-router.get("/me", authMiddleware, (req, res) => {
-  res.json({
-    message: "You are authorized",
-    user: req.user,
-  });
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    // Get fresh user data from database
+    const user = await User.findById(req.user.userId)
+      .select('-password -resetToken -verificationToken')
+      .lean();
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    res.json({
+      message: "User data retrieved successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified, 
+        tenantId: user.tenantId,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        avatarURL: user.avatarURL
+      },
+      tokenInfo: {
+        userId: req.user.userId,
+        email: req.user.email,
+        role: req.user.role,
+        tenantId: req.user.tenantId
+      }
+    });
+  } catch (error) {
+    console.error("Get user error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/verify-status/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    const tenantId = req.tenantId || 'default';
+    
+    const user = await User.findOne({ 
+      email: email.toLowerCase().trim(), 
+      tenantId 
+    }).select('isVerified email tenantId');
+    
+    if (!user) {
+      return res.status(404).json({ 
+        message: "User not found",
+        isVerified: false 
+      });
+    }
+    
+    res.json({
+      email: user.email,
+      isVerified: user.isVerified,
+      tenantId: user.tenantId
+    });
+  } catch (error) {
+    console.error("Verify status error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 router.put("/me", authMiddleware, authController.updateProfile);
