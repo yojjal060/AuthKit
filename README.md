@@ -150,6 +150,78 @@ npm test
 |--------|----------|-------------|---------|------|
 | `GET` | `/api/auth/admin` | Admin panel access | `Authorization: Bearer <token>`<br>`X-Tenant-ID` | None |
 
+## 🏥 Health Monitoring Endpoints
+
+The health monitoring endpoint allows you to check the operational status of the AuthKit API. This is particularly useful for:
+- Load balancer health checks
+- Monitoring and alerting systems
+- Service discovery mechanisms
+- Uptime monitoring tools
+
+### Health Check Endpoint
+
+| Method | Endpoint             | Description                    | Headers Required |
+|--------|----------------------|--------------------------------|------------------|
+| `GET`  | `/api/auth/health`   | Check API health status        | `X-Tenant-ID` (optional) |
+
+**Request Method:** `GET`
+
+**Headers:**
+- `X-Tenant-ID` (optional) - If provided, returns the tenant ID in the response
+
+**Response Status Codes:**
+- `200 OK` - API is healthy and operational
+
+**Response Format:**
+```json
+{
+  "status": "ok",
+  "message": "AuthKit API is healthy.",
+  "timestamp": "2023-10-01T12:00:00.000Z",
+  "tenant": "default"
+}
+```
+
+**Response Fields:**
+- `status` (string): Health status indicator. Returns `"ok"` when the API is functioning properly
+- `message` (string): Human-readable status message
+- `timestamp` (string): ISO 8601 formatted timestamp of when the health check was performed
+- `tenant` (string): The tenant ID from the request header, or `"default"` if not provided
+
+**Example Request:**
+```javascript
+// Basic health check
+const response = await fetch('http://localhost:5000/api/auth/health');
+const healthData = await response.json();
+console.log(healthData);
+// Output: { status: "ok", message: "AuthKit API is healthy.", timestamp: "2023-10-01T12:00:00.000Z", tenant: "default" }
+
+// Health check with tenant ID
+const response = await fetch('http://localhost:5000/api/auth/health', {
+  headers: {
+    'X-Tenant-ID': 'johns-chat-app'
+  }
+});
+const healthData = await response.json();
+console.log(healthData);
+// Output: { status: "ok", message: "AuthKit API is healthy.", timestamp: "2023-10-01T12:00:00.000Z", tenant: "johns-chat-app" }
+```
+
+**cURL Example:**
+```bash
+# Basic health check
+curl http://localhost:5000/api/auth/health
+
+# Health check with tenant ID
+curl -H "X-Tenant-ID: johns-chat-app" http://localhost:5000/api/auth/health
+```
+
+**Use Cases:**
+- **Load Balancer Configuration**: Configure your load balancer to ping this endpoint to verify the API is responding
+- **Monitoring Systems**: Set up monitoring tools like Prometheus, DataDog, or New Relic to periodically check this endpoint
+- **CI/CD Pipelines**: Verify deployment success by checking the health endpoint after deployment
+- **Multi-tenant Status**: Track which tenant's health is being checked in multi-tenant deployments
+
 ## 💻 Usage Examples
 
 ### Multi-Tenant Registration
