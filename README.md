@@ -160,11 +160,9 @@ The health monitoring endpoint allows you to check the operational status of the
 
 ### Health Check Endpoint
 
-| Method | Endpoint             | Description                    | Headers Required |
-|--------|----------------------|--------------------------------|------------------|
+| Method | Endpoint             | Description                    | Headers |
+|--------|----------------------|--------------------------------|---------|
 | `GET`  | `/api/auth/health`   | Check API health status        | `X-Tenant-ID` (optional) |
-
-**Request Method:** `GET`
 
 **Headers:**
 - `X-Tenant-ID` (optional) - If provided, returns the tenant ID in the response
